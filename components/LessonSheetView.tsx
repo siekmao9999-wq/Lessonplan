@@ -28,12 +28,15 @@ import {
   Link as LinkIcon,
   Info,
   Loader2,
+  Clock,
+  AlertCircle,
 } from 'lucide-react';
 import { LessonPlanData, Step3Activity, Step3Exercise } from '@/types/lesson-plan';
 import { generateStandaloneLessonPlanHTML, generateStandaloneWordDoc, downloadFile } from '@/lib/export-html';
 import { getStepIllustrations, AVAILABLE_DIAGRAMS_CATALOG } from '@/lib/step-illustrations';
 import { MathText, MathToolbar } from '@/components/MathText';
 import { PrintPdfModal } from '@/components/PrintPdfModal';
+import { UserProfile, ManagedLessonPlanRecord } from '@/types/auth';
 
 interface LessonSheetViewProps {
   plan: LessonPlanData;
@@ -41,6 +44,10 @@ interface LessonSheetViewProps {
   onEnhanceSection?: (sectionName: string, currentContent: string) => Promise<string | null>;
   onOpenPrintModal?: () => void;
   onOpenWorksheetModal?: (tab?: 'worksheet' | 'materials') => void;
+  currentUser?: UserProfile;
+  planRecord?: ManagedLessonPlanRecord | null;
+  onSubmitForReview?: () => void;
+  onApprovePlan?: (feedback?: string) => void;
 }
 
 export function LessonSheetView({
@@ -49,6 +56,10 @@ export function LessonSheetView({
   onEnhanceSection,
   onOpenPrintModal,
   onOpenWorksheetModal,
+  currentUser,
+  planRecord,
+  onSubmitForReview,
+  onApprovePlan,
 }: LessonSheetViewProps) {
   const [isEditable, setIsEditable] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -768,6 +779,80 @@ IV. ការវាយតម្លៃ
         id="printable-lesson-sheet"
         className="lesson-sheet bg-white rounded-xl shadow-lg border border-slate-200/80 p-6 sm:p-10 max-w-[900px] mx-auto text-slate-900 transition font-khmer"
       >
+        {/* Admin Review & Approval Stamp */}
+        {planRecord && (
+          <div className="mb-5 no-print">
+            {planRecord.status === 'approved' && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border-2 border-emerald-500 rounded-xl flex items-center justify-between gap-3 text-xs text-emerald-950 dark:text-emerald-200">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                    ✓
+                  </div>
+                  <div>
+                    <div className="font-bold flex items-center gap-1.5">
+                      <span>បានត្រួតពិនិត្យ និងអនុម័តផ្លូវការ (MoEYS Approved)</span>
+                      <span className="text-[10px] bg-emerald-200 dark:bg-emerald-900 px-1.5 py-0.2 rounded font-semibold">
+                        {planRecord.reviewedBy || 'នាយកសាលា'}
+                      </span>
+                    </div>
+                    {planRecord.feedback && (
+                      <p className="text-[11px] text-emerald-800 dark:text-emerald-300 mt-0.5">
+                        💬 <strong>មតិយោបល់៖</strong> {planRecord.feedback}
+                      </p>
+                    )}
+                  </div>
+                </div>
+                <div className="text-[10px] text-emerald-700 dark:text-emerald-400 font-semibold text-right">
+                  {planRecord.reviewedAt && new Date(planRecord.reviewedAt).toLocaleDateString('km-KH')}
+                </div>
+              </div>
+            )}
+
+            {planRecord.status === 'submitted' && (
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-300 rounded-xl flex items-center justify-between gap-3 text-xs text-amber-950 dark:text-amber-200">
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-amber-600 animate-spin" />
+                  <span>
+                    កិច្ចតែងការនេះត្រូវបានដាក់ស្នើ និង<strong>កំពុងរង់ចាំការពិនិត្យពីនាយកសាលា (Pending Review)</strong>
+                  </span>
+                </div>
+                {currentUser?.role === 'admin' && onApprovePlan && (
+                  <button
+                    type="button"
+                    onClick={() => onApprovePlan()}
+                    className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+                  >
+                    ✓ អនុម័តឥឡូវនេះ
+                  </button>
+                )}
+              </div>
+            )}
+
+            {planRecord.status === 'needs_revision' && (
+              <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-300 rounded-xl space-y-1.5 text-xs text-red-950 dark:text-red-200">
+                <div className="flex items-center justify-between">
+                  <div className="font-bold flex items-center gap-1.5 text-red-700 dark:text-red-300">
+                    <AlertCircle className="w-4 h-4" />
+                    <span>នាយកសាលាបានស្នើសុំឱ្យកែសម្រួលចំណុចខាងក្រោម៖</span>
+                  </div>
+                  {onSubmitForReview && (
+                    <button
+                      type="button"
+                      onClick={onSubmitForReview}
+                      className="px-2.5 py-1 bg-red-600 hover:bg-red-700 text-white font-bold rounded text-[11px] shadow-xs cursor-pointer"
+                    >
+                      📤 ដាក់ស្នើឡើងវិញ
+                    </button>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 whitespace-pre-line pl-5">
+                  {planRecord.feedback}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Top Header: Kingdom of Cambodia & School */}
         <div className="flex justify-between items-start border-b border-slate-300 pb-5 mb-6">
           <div className="text-left space-y-1">

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Sparkles,
   FileText,
@@ -37,8 +37,20 @@ import { PromptModal } from '@/components/PromptModal';
 import { WorksheetModal } from '@/components/WorksheetModal';
 import { PresetModal } from '@/components/PresetModal';
 import { PrintPdfModal } from '@/components/PrintPdfModal';
+import { UserRoleSwitcherModal } from '@/components/UserRoleSwitcherModal';
+import { AdminDashboardModal } from '@/components/AdminDashboardModal';
 import { SKUN_NGS_PHYSICS_PRESET, COMPREHENSIVE_PRESETS } from '@/lib/presets';
 import { LessonPlanData, TeacherInfo, LessonGeneralInfo } from '@/types/lesson-plan';
+import { UserProfile, ManagedLessonPlanRecord, PlanStatus } from '@/types/auth';
+import {
+  getAllUsers,
+  saveAllUsers,
+  getCurrentUser,
+  setCurrentUserId,
+  getAllManagedPlans,
+  submitPlanForReview,
+  reviewPlanStatus,
+} from '@/lib/auth-storage';
 import { generateStandaloneLessonPlanHTML, downloadFile } from '@/lib/export-html';
 
 export default function HomePage() {
@@ -102,6 +114,30 @@ export default function HomePage() {
     text: string;
   } | null>(null);
 
+  // Admin and User Authentication / Role Management State
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => getCurrentUser());
+  const [allUsers, setAllUsers] = useState<UserProfile[]>(() => getAllUsers());
+  const [managedPlans, setManagedPlans] = useState<ManagedLessonPlanRecord[]>(() => getAllManagedPlans());
+  const [showRoleSwitcherModal, setShowRoleSwitcherModal] = useState<boolean>(false);
+  const [showAdminDashboardModal, setShowAdminDashboardModal] = useState<boolean>(false);
+
+  // Current Lesson Plan Review Record
+  const currentPlanRecord = useMemo(() => {
+    return (
+      managedPlans.find(
+        (p) =>
+          p.subject === plan.generalInfo.subject &&
+          p.grade === plan.generalInfo.grade &&
+          p.lessonTitle === plan.generalInfo.lessonTitle
+      ) || null
+    );
+  }, [managedPlans, plan]);
+
+  // Count pending reviews for Admin
+  const pendingReviewCount = useMemo(() => {
+    return managedPlans.filter((p) => p.status === 'submitted').length;
+  }, [managedPlans]);
+
   // Save to localStorage
   const updatePlan = (newPlan: LessonPlanData) => {
     setPlan(newPlan);
@@ -117,6 +153,59 @@ export default function HomePage() {
     setTimeout(() => {
       setToastMessage(null);
     }, 4500);
+  };
+
+  // Auth & Role Handlers
+  const handleSelectUser = (user: UserProfile) => {
+    setCurrentUser(user);
+    setCurrentUserId(user.id);
+    if (user.role === 'user') {
+      updatePlan({
+        ...plan,
+        teacherInfo: {
+          ...plan.teacherInfo,
+          teacherName: user.name,
+          schoolName: user.schoolName || plan.teacherInfo.schoolName,
+          phoneNumber: user.phoneNumber || plan.teacherInfo.phoneNumber,
+        },
+      });
+    }
+    showToast('info', `បានប្តូរទៅកាន់គណនី៖ ${user.name} (${user.role === 'admin' ? 'Admin នាយក' : 'User គ្រូ'})`);
+  };
+
+  const handleAddNewUser = (newUserData: Omit<UserProfile, 'id' | 'createdAt'>) => {
+    const newUser: UserProfile = {
+      ...newUserData,
+      id: `user-${Date.now()}`,
+      createdAt: new Date().toISOString().split('T')[0],
+    };
+    const updated = [...allUsers, newUser];
+    setAllUsers(updated);
+    saveAllUsers(updated);
+    handleSelectUser(newUser);
+    showToast('success', `បានបង្កើត និងប្តូរទៅកាន់គណនី ${newUser.name} រួចរាល់!`);
+  };
+
+  const handleUpdateUsers = (updated: UserProfile[]) => {
+    setAllUsers(updated);
+    saveAllUsers(updated);
+    const found = updated.find((u) => u.id === currentUser.id);
+    if (found) setCurrentUser(found);
+  };
+
+  const handleSubmitPlanForReview = () => {
+    submitPlanForReview(currentUser, plan);
+    setManagedPlans(getAllManagedPlans());
+    showToast('success', '🎉 បានដាក់ស្នើកិច្ចតែងការទៅកាន់នាយកសាលាដើម្បីត្រួតពិនិត្យ និងអនុម័ត!');
+  };
+
+  const handleReviewPlan = (planId: string, status: PlanStatus, feedback?: string) => {
+    const reviewerName = currentUser.isPermanentAdmin
+      ? `${currentUser.name} (Admin អចិន្ត្រៃយ៍)`
+      : currentUser.name;
+    reviewPlanStatus(planId, reviewerName, status, feedback);
+    setManagedPlans(getAllManagedPlans());
+    showToast('success', `✓ បានរក្សាទុកការត្រួតពិនិត្យ (${status === 'approved' ? 'បានអនុម័ត' : 'ស្នើសុំកែសម្រួល'}) រួចរាល់!`);
   };
 
   const handleUpdateTeacherInfo = (info: Partial<TeacherInfo>) => {
@@ -237,6 +326,12 @@ export default function HomePage() {
         onGenerateClick={handleGenerateAI}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        currentUser={currentUser}
+        pendingReviewCount={pendingReviewCount}
+        currentPlanStatus={currentPlanRecord?.status || 'draft'}
+        onOpenRoleSwitcher={() => setShowRoleSwitcherModal(true)}
+        onOpenAdminDashboard={() => setShowAdminDashboardModal(true)}
+        onSubmitPlanForReview={handleSubmitPlanForReview}
       />
 
       {/* Toast Notification */}
@@ -653,6 +748,17 @@ export default function HomePage() {
                 setWorksheetModalTab(tab || 'worksheet');
                 setShowWorksheetModal(true);
               }}
+              currentUser={currentUser}
+              planRecord={currentPlanRecord}
+              onSubmitForReview={handleSubmitPlanForReview}
+              onApprovePlan={(feedback) => {
+                if (currentPlanRecord) {
+                  handleReviewPlan(currentPlanRecord.id, 'approved', feedback);
+                } else {
+                  const rec = submitPlanForReview(currentUser, plan);
+                  handleReviewPlan(rec.id, 'approved', feedback);
+                }
+              }}
             />
           </div>
         )}
@@ -719,6 +825,31 @@ export default function HomePage() {
         plan={plan}
         onUpdatePlan={updatePlan}
         initialTab={worksheetModalTab}
+      />
+
+      {/* User Role Switcher Modal */}
+      <UserRoleSwitcherModal
+        isOpen={showRoleSwitcherModal}
+        onClose={() => setShowRoleSwitcherModal(false)}
+        currentUser={currentUser}
+        allUsers={allUsers}
+        onSelectUser={handleSelectUser}
+        onAddNewUser={handleAddNewUser}
+      />
+
+      {/* Admin Dashboard Modal */}
+      <AdminDashboardModal
+        isOpen={showAdminDashboardModal}
+        onClose={() => setShowAdminDashboardModal(false)}
+        currentUser={currentUser}
+        allUsers={allUsers}
+        managedPlans={managedPlans}
+        onReviewPlan={handleReviewPlan}
+        onSelectPlanToView={(viewPlan) => {
+          updatePlan(viewPlan);
+          showToast('info', `បានបើកកិច្ចតែងការ៖ ${viewPlan.generalInfo.lessonTitle}`);
+        }}
+        onUpdateUsers={handleUpdateUsers}
       />
     </div>
   );

@@ -14,9 +14,14 @@ import {
   School,
   Sun,
   Moon,
+  Shield,
+  User,
+  ArrowRightLeft,
+  Send,
 } from 'lucide-react';
 import { COMPREHENSIVE_PRESETS, SKUN_NGS_PHYSICS_PRESET } from '@/lib/presets';
 import { LessonPlanData } from '@/types/lesson-plan';
+import { UserProfile, PlanStatus } from '@/types/auth';
 
 interface NavbarProps {
   currentPlan: LessonPlanData;
@@ -29,6 +34,12 @@ interface NavbarProps {
   onGenerateClick: () => void;
   theme?: 'light' | 'dark';
   onToggleTheme?: () => void;
+  currentUser?: UserProfile;
+  pendingReviewCount?: number;
+  currentPlanStatus?: PlanStatus;
+  onOpenRoleSwitcher?: () => void;
+  onOpenAdminDashboard?: () => void;
+  onSubmitPlanForReview?: () => void;
 }
 
 export function Navbar({
@@ -42,6 +53,12 @@ export function Navbar({
   onGenerateClick,
   theme = 'light',
   onToggleTheme,
+  currentUser,
+  pendingReviewCount,
+  currentPlanStatus,
+  onOpenRoleSwitcher,
+  onOpenAdminDashboard,
+  onSubmitPlanForReview,
 }: NavbarProps) {
   const [copied, setCopied] = React.useState(false);
 
@@ -150,6 +167,80 @@ export function Navbar({
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-1.5 sm:space-x-2">
+            {/* User / Admin Role Profile Controls */}
+            {currentUser && (
+              <div className="flex items-center gap-1">
+                {currentUser.role === 'admin' ? (
+                  <button
+                    type="button"
+                    onClick={onOpenAdminDashboard}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-amber-50 via-purple-50 to-indigo-50 hover:from-amber-100 hover:to-purple-100 dark:from-purple-950/80 dark:via-purple-900/60 dark:to-slate-900 text-purple-950 dark:text-purple-200 border border-purple-300 dark:border-purple-800 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer"
+                    title={`បើកផ្ទាំងគ្រប់គ្រងរដ្ឋបាល (${currentUser.isPermanentAdmin ? `${currentUser.name} - Admin អចិន្ត្រៃយ៍` : currentUser.name})`}
+                  >
+                    <span>👑 {currentUser.name}</span>
+                    <span className="hidden xl:inline text-[10px] text-amber-900 dark:text-amber-200 bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-700 px-1.5 py-0.5 rounded font-bold">
+                      {currentUser.isPermanentAdmin ? 'Admin អចិន្ត្រៃយ៍' : 'Admin'}
+                    </span>
+                    {(pendingReviewCount || 0) > 0 && (
+                      <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full animate-pulse">
+                        {pendingReviewCount}
+                      </span>
+                    )}
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <span className="hidden lg:inline-flex items-center gap-1 px-2.5 py-1 bg-sky-50 dark:bg-sky-950/60 text-sky-900 dark:text-sky-200 border border-sky-200 dark:border-sky-800 rounded-lg text-xs font-medium">
+                      <span>👨‍🏫 {currentUser.name}</span>
+                    </span>
+
+                    {/* Submit Plan for Review button if User */}
+                    {onSubmitPlanForReview && (
+                      <button
+                        type="button"
+                        onClick={onSubmitPlanForReview}
+                        className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition shadow-xs cursor-pointer ${
+                          currentPlanStatus === 'approved'
+                            ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300'
+                            : currentPlanStatus === 'submitted'
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300'
+                            : 'bg-indigo-600 hover:bg-indigo-700 text-white'
+                        }`}
+                        title="ដាក់ស្នើកិច្ចតែងការនេះជូននាយកសាលាពិនិត្យ និងអនុម័ត"
+                      >
+                        {currentPlanStatus === 'approved' ? (
+                          <>
+                            <Check className="w-3.5 h-3.5" />
+                            <span className="hidden md:inline">បានអនុម័ត ✓</span>
+                          </>
+                        ) : currentPlanStatus === 'submitted' ? (
+                          <>
+                            <Sparkles className="w-3.5 h-3.5" />
+                            <span className="hidden md:inline">រង់ចាំពិនិត្យ</span>
+                          </>
+                        ) : (
+                          <>
+                            <Send className="w-3.5 h-3.5" />
+                            <span className="hidden md:inline">ស្នើអនុម័ត</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Switch Role Button */}
+                {onOpenRoleSwitcher && (
+                  <button
+                    type="button"
+                    onClick={onOpenRoleSwitcher}
+                    className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition border border-slate-200 dark:border-slate-700 cursor-pointer"
+                    title={`ប្តូរតួនាទី (បច្ចុប្បន្ន៖ ${currentUser.role === 'admin' ? 'Admin នាយក' : 'User គ្រូ'})`}
+                  >
+                    <ArrowRightLeft className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            )}
             {/* Theme Toggle Button */}
             {onToggleTheme && (
               <button
