@@ -1,0 +1,165 @@
+@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Moul&family=Siemreap&family=STIX+Two+Math&family=STIX+Two+Text:ital,wght@0,400..700;1,400..700&display=swap');
+@import "katex/dist/katex.min.css";
+@import "tailwindcss";
+
+:root {
+  --font-khmer: 'Kantumruy Pro', 'Siemreap', system-ui, -apple-system, sans-serif;
+  --font-moul: 'Moul', cursive, serif;
+  --font-mathtype: 'Cambria Math', 'STIX Two Math', 'Times New Roman', 'Nimbus Roman', serif;
+}
+
+body {
+  font-family: var(--font-khmer);
+  background-color: #f8fafc;
+  color: #1e293b;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* MathType styling enhancements (Cambria Math / Times New Roman / STIX Two Math standard) */
+.mathtype-font,
+.mathtype-formula,
+.mathtype-inline,
+.mathtype-block,
+.mathtype-equation,
+.katex,
+.katex-html {
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', 'Nimbus Roman', serif !important;
+  letter-spacing: 0.02em;
+}
+
+.mathtype-inline {
+  display: inline-block;
+  padding: 0 1.5px;
+  vertical-align: -0.1em;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+}
+
+.mathtype-block {
+  display: block;
+  text-align: center;
+  margin: 0.5em 0;
+  padding: 0.25em 0;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+}
+
+.mathtype-var,
+.katex .mathnormal,
+.katex .mathit {
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+  font-style: italic !important;
+  font-weight: 500;
+  padding: 0 1px;
+}
+
+.mathtype-op,
+.mathtype-num,
+.mathtype-symbol,
+.katex .mord,
+.katex .mord.text,
+.katex .mbin,
+.katex .mrel,
+.katex .mopen,
+.katex .mclose,
+.katex .mpunct,
+.katex .minner {
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+  font-style: normal;
+  font-weight: 500;
+  padding: 0 1px;
+}
+
+.mathtype-fraction {
+  display: inline-flex;
+  flex-direction: column;
+  vertical-align: -0.4em;
+  text-align: center;
+  padding: 0 2px;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+}
+
+.mathtype-num-part {
+  border-bottom: 1.2px solid currentColor;
+  padding-bottom: 1px;
+  font-size: 0.85em;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+}
+
+.mathtype-den-part {
+  padding-top: 1px;
+  font-size: 0.85em;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+}
+
+/* KaTeX MathType typography refinement */
+.katex {
+  font-size: 1.08em;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif !important;
+}
+
+.katex-display {
+  margin: 0.6em 0 !important;
+}
+
+.mathtype-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: 'Times New Roman', 'Cambria Math', 'STIX Two Math', serif;
+}
+
+.font-moul {
+  font-family: 'Moul', cursive, serif;
+}
+
+.font-khmer {
+  font-family: 'Kantumruy Pro', 'Siemreap', sans-serif;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Print optimizations for Ministry of Education standard A4 format */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  .print-only {
+    display: block !important;
+  }
+  body {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+    font-size: 10.5pt !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .lesson-sheet {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+  table, tr, .signatures-table {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+  @page {
+    size: A4 portrait;
+    margin: 1.0cm 1.0cm 1.0cm 1.0cm;
+  }
+}
+

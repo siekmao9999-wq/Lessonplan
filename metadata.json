@@ -1,0 +1,6 @@
+{
+  "name": "ប្រព័ន្ធបង្កើតកិច្ចតែងការបង្រៀន AI - KrouPlan",
+  "description": "ប្រព័ន្ធបង្កើតកិច្ចតែងការបង្រៀនស្វ័យប្រវត្តិតាមស្តង់ដារ ៥ ជំហានរបស់ក្រសួងអប់រំ យុវជន និងកីឡា ជាមួយការកែសម្រួលនិងទាញយកជា HTML ភ្លាមៗ",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
