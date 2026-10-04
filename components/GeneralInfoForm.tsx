@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Sparkles,
   School,
@@ -15,6 +15,14 @@ import {
   FolderOpen,
   GraduationCap,
   BookOpen,
+  Search,
+  Filter,
+  Check,
+  ChevronDown,
+  ChevronUp,
+  Bookmark,
+  CheckCircle2,
+  X,
 } from 'lucide-react';
 import { LessonPlanData, TeacherInfo, LessonGeneralInfo } from '@/types/lesson-plan';
 import { SKUN_NGS_PHYSICS_PRESET } from '@/lib/presets';
@@ -98,6 +106,59 @@ export function GeneralInfoForm({
 
   // Get matching curriculum lessons for current grade and subject
   const availableLessons = getLessonsForGradeAndSubject(generalInfo.grade, generalInfo.subject);
+
+  const [selectedChapterFilter, setSelectedChapterFilter] = useState<string>('all');
+  const [lessonSearchQuery, setLessonSearchQuery] = useState<string>('');
+  const [isCurriculumExpanded, setIsCurriculumExpanded] = useState<boolean>(true);
+
+  // Extract unique chapters in available lessons
+  const uniqueChapters = useMemo(() => {
+    const chapters: string[] = [];
+    for (const l of availableLessons) {
+      if (l.chapter && !chapters.includes(l.chapter)) {
+        chapters.push(l.chapter);
+      }
+    }
+    return chapters;
+  }, [availableLessons]);
+
+  // Filter lessons based on chapter and search query
+  const filteredLessons = useMemo(() => {
+    const q = lessonSearchQuery.trim().toLowerCase();
+    return availableLessons.filter((l) => {
+      const matchChapter =
+        selectedChapterFilter === 'all' || l.chapter === selectedChapterFilter;
+      const matchSearch =
+        !q ||
+        l.lessonTitle.toLowerCase().includes(q) ||
+        l.chapter.toLowerCase().includes(q) ||
+        (l.subTopic && l.subTopic.toLowerCase().includes(q)) ||
+        (l.keyConcepts && l.keyConcepts.some((k) => k.toLowerCase().includes(q)));
+      return matchChapter && matchSearch;
+    });
+  }, [availableLessons, selectedChapterFilter, lessonSearchQuery]);
+
+  // Group lessons by Chapter
+  const lessonsByChapter = useMemo(() => {
+    const map = new Map<string, typeof availableLessons>();
+    for (const l of filteredLessons) {
+      const ch = l.chapter || 'ជំពូកទូទៅ';
+      if (!map.has(ch)) {
+        map.set(ch, []);
+      }
+      map.get(ch)!.push(l);
+    }
+    return map;
+  }, [filteredLessons]);
+
+  // Find currently selected curriculum lesson
+  const activeCurriculumLesson = useMemo(() => {
+    return availableLessons.find(
+      (l) =>
+        l.lessonTitle.trim() === generalInfo.lessonTitle.trim() ||
+        (generalInfo.lessonTitle && l.lessonTitle.includes(generalInfo.lessonTitle))
+    );
+  }, [availableLessons, generalInfo.lessonTitle]);
 
   return (
     <div className="bg-white rounded-xl shadow-xs border border-slate-200 overflow-hidden">
@@ -459,44 +520,216 @@ export function GeneralInfoForm({
               </select>
             </div>
 
-            {/* Quick Lesson Selector from official curriculum */}
+            {/* Comprehensive Official Curriculum Browser (All Chapters & All Lessons) */}
             {availableLessons.length > 0 && (
-              <div className="sm:col-span-2 lg:col-span-3 bg-sky-50/80 border border-sky-200 rounded-xl p-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5 mb-2">
-                  <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
-                    <BookOpen className="w-3.5 h-3.5 text-sky-700" />
-                    <span>ជ្រើសរើសមេរៀនផ្លូវការក្នុងកម្មវិធីសិក្សាជាតិ ({availableLessons.length} មេរៀន)៖</span>
-                  </span>
-                  <span className="text-[10.5px] text-sky-700 font-medium">
-                    ចុចលើមេរៀនណាមួយដើម្បីបំពេញជំពូក និងប្រធានបទដោយស្វ័យប្រវត្តិ
-                  </span>
+              <div className="sm:col-span-2 lg:col-span-3 bg-gradient-to-br from-sky-50/90 via-indigo-50/40 to-slate-50 border border-sky-200 rounded-2xl p-3.5 sm:p-4 shadow-xs">
+                {/* Header & Controls */}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2.5 pb-3 border-b border-sky-100">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-sky-600 text-white flex items-center justify-center shadow-xs shrink-0">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs sm:text-sm font-bold text-sky-950">
+                          ជ្រើសរើសមេរៀនផ្លូវការក្នុងកម្មវិធីសិក្សាជាតិ
+                        </span>
+                        <span className="bg-sky-100 text-sky-800 text-[10.5px] font-bold px-2 py-0.5 rounded-full border border-sky-200">
+                          {generalInfo.grade} • {generalInfo.subject}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-sky-700 font-medium mt-0.5">
+                        មានគ្រប់ {availableLessons.length} មេរៀន ក្នុង {uniqueChapters.length} ជំពូក — ចុចលើមេរៀនដើម្បីបំពេញជំពូក និងប្រធានបទដោយស្វ័យប្រវត្តិ
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsCurriculumExpanded(!isCurriculumExpanded)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-semibold rounded-lg bg-white text-sky-700 border border-sky-200 hover:bg-sky-50 transition cursor-pointer shadow-2xs"
+                    >
+                      {isCurriculumExpanded ? (
+                        <>
+                          <ChevronUp className="w-3.5 h-3.5" />
+                          <span>បង្រួម</span>
+                        </>
+                      ) : (
+                        <>
+                          <ChevronDown className="w-3.5 h-3.5" />
+                          <span>ពង្រីកមើលទាំងអស់ ({availableLessons.length} មេរៀន)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {availableLessons.map((l) => {
-                    const isSelected = generalInfo.lessonTitle === l.lessonTitle;
-                    return (
-                      <button
-                        key={l.id}
-                        type="button"
-                        onClick={() => {
-                          onChangeGeneralInfo({
-                            chapter: l.chapter,
-                            lessonTitle: l.lessonTitle,
-                            subTopic: l.subTopic,
-                          });
-                        }}
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition cursor-pointer border ${
-                          isSelected
-                            ? 'bg-sky-600 text-white border-sky-700 shadow-xs'
-                            : 'bg-white text-slate-700 border-slate-200 hover:bg-sky-100 hover:text-sky-900'
-                        }`}
-                        title={`${l.chapter}: ${l.subTopic}`}
-                      >
-                        {l.lessonTitle}
-                      </button>
-                    );
-                  })}
-                </div>
+
+                {/* Filter and Search Bar */}
+                {isCurriculumExpanded && (
+                  <div className="space-y-3 pt-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-2">
+                      {/* Chapter Filter Dropdown */}
+                      <div className="sm:col-span-5 relative">
+                        <div className="relative">
+                          <Filter className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                          <select
+                            aria-label="ជ្រើសរើសជំពូកសម្រាប់តម្រង"
+                            value={selectedChapterFilter}
+                            onChange={(e) => setSelectedChapterFilter(e.target.value)}
+                            className="w-full text-xs rounded-lg border border-sky-200 bg-white pl-8 pr-3 py-1.5 text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500 cursor-pointer truncate"
+                          >
+                            <option value="all">
+                              📂 គ្រប់ជំពូកទាំងអស់ ({availableLessons.length} មេរៀន)
+                            </option>
+                            {uniqueChapters.map((ch) => {
+                              const countInCh = availableLessons.filter((l) => l.chapter === ch).length;
+                              return (
+                                <option key={ch} value={ch}>
+                                  {ch} ({countInCh} មេរៀន)
+                                </option>
+                              );
+                            })}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Search Input */}
+                      <div className="sm:col-span-7 relative">
+                        <Search className="w-3.5 h-3.5 absolute left-2.5 top-2.5 text-slate-400 pointer-events-none" />
+                        <input
+                          type="text"
+                          value={lessonSearchQuery}
+                          onChange={(e) => setLessonSearchQuery(e.target.value)}
+                          placeholder="ស្វែងរកតាមចំណងជើងមេរៀន ជំពូក ឬពាក្យគន្លឹះ..."
+                          className="w-full text-xs rounded-lg border border-sky-200 bg-white pl-8 pr-7 py-1.5 text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                        {lessonSearchQuery && (
+                          <button
+                            type="button"
+                            onClick={() => setLessonSearchQuery('')}
+                            className="absolute right-2 top-2 text-slate-400 hover:text-slate-600 cursor-pointer"
+                            title="លុបការស្វែងរក"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Active Selected Lesson Detail Banner */}
+                    {activeCurriculumLesson && (
+                      <div className="bg-emerald-50/90 border border-emerald-200 rounded-xl p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 shadow-2xs">
+                        <div className="flex items-start gap-2.5">
+                          <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 shrink-0" />
+                          <div className="text-xs">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-emerald-950">
+                                មេរៀនដែលបានជ្រើស៖
+                              </span>
+                              <span className="font-bold text-emerald-800 bg-emerald-100/70 px-2 py-0.5 rounded-md">
+                                {activeCurriculumLesson.lessonTitle}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-emerald-700 mt-1 font-medium">
+                              <strong>ជំពូក៖</strong> {activeCurriculumLesson.chapter} • <strong>ខ្លឹមសារ៖</strong> {activeCurriculumLesson.subTopic}
+                            </div>
+                            {activeCurriculumLesson.keyConcepts && activeCurriculumLesson.keyConcepts.length > 0 && (
+                              <div className="flex items-center gap-1 flex-wrap mt-1.5">
+                                <span className="text-[10px] font-semibold text-emerald-800">
+                                  គោលគំនិតគន្លឹះ៖
+                                </span>
+                                {activeCurriculumLesson.keyConcepts.map((kc, i) => (
+                                  <span
+                                    key={i}
+                                    className="bg-white text-emerald-800 border border-emerald-200 text-[10px] px-1.5 py-0.5 rounded font-medium"
+                                  >
+                                    {kc}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <span className="inline-flex items-center gap-1 text-[10.5px] font-bold bg-emerald-600 text-white px-2.5 py-1 rounded-full shrink-0 shadow-2xs">
+                          <Check className="w-3.5 h-3.5" /> បានបំពេញស្វ័យប្រវត្តិក្នុុងទម្រង់
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Lessons Grouped by Chapter */}
+                    {lessonsByChapter.size === 0 ? (
+                      <div className="text-center py-5 bg-white/70 rounded-xl border border-dashed border-sky-200 text-xs text-slate-500">
+                        ពុំមានមេរៀនដែលត្រូវនឹងពាក្យស្វែងរក &quot;{lessonSearchQuery}&quot; ឡើយ។ សូមសាកល្បងពាក្យគន្លឹះផ្សេង។
+                      </div>
+                    ) : (
+                      <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+                        {Array.from(lessonsByChapter.entries()).map(([chapterTitle, lessons]) => (
+                          <div
+                            key={chapterTitle}
+                            className="bg-white rounded-xl border border-sky-100/80 p-2.5 shadow-2xs"
+                          >
+                            {/* Chapter Header */}
+                            <div className="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-slate-100">
+                              <span className="text-xs font-bold text-sky-950 flex items-center gap-1.5">
+                                <Bookmark className="w-3.5 h-3.5 text-sky-600 shrink-0" />
+                                <span>{chapterTitle}</span>
+                              </span>
+                              <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full">
+                                {lessons.length} មេរៀន
+                              </span>
+                            </div>
+
+                            {/* Lessons List in Chapter */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                              {lessons.map((l) => {
+                                const isSelected =
+                                  generalInfo.lessonTitle.trim() === l.lessonTitle.trim();
+                                return (
+                                  <button
+                                    key={l.id}
+                                    type="button"
+                                    onClick={() => {
+                                      onChangeGeneralInfo({
+                                        chapter: l.chapter,
+                                        lessonTitle: l.lessonTitle,
+                                        subTopic: l.subTopic,
+                                      });
+                                    }}
+                                    className={`text-left p-2.5 rounded-xl text-xs transition cursor-pointer border relative flex flex-col justify-between ${
+                                      isSelected
+                                        ? 'bg-sky-600 text-white border-sky-700 shadow-xs ring-2 ring-sky-300'
+                                        : 'bg-slate-50/80 hover:bg-sky-50 text-slate-800 border-slate-200 hover:border-sky-300'
+                                    }`}
+                                    title={`${l.chapter}: ${l.subTopic}`}
+                                  >
+                                    <div className="flex items-start justify-between gap-1 mb-1">
+                                      <span className="font-bold text-[11.5px] leading-snug">
+                                        {l.lessonTitle}
+                                      </span>
+                                      {isSelected && (
+                                        <span className="shrink-0 bg-white/20 p-0.5 rounded-full text-white">
+                                          <Check className="w-3 h-3" />
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p
+                                      className={`text-[10px] line-clamp-2 leading-tight ${
+                                        isSelected ? 'text-sky-100' : 'text-slate-500'
+                                      }`}
+                                    >
+                                      {l.subTopic}
+                                    </p>
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 

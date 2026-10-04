@@ -24,6 +24,7 @@ import {
   Edit2,
   Check,
   Send,
+  Database,
 } from 'lucide-react';
 import { UserProfile, ManagedLessonPlanRecord, PlanStatus, UserRole } from '@/types/auth';
 import { LessonPlanData } from '@/types/lesson-plan';
@@ -37,6 +38,7 @@ interface AdminDashboardModalProps {
   onReviewPlan: (planId: string, status: PlanStatus, feedback?: string) => void;
   onSelectPlanToView: (plan: LessonPlanData) => void;
   onUpdateUsers: (users: UserProfile[]) => void;
+  onOpenSupabaseModal?: () => void;
 }
 
 export function AdminDashboardModal({
@@ -48,6 +50,7 @@ export function AdminDashboardModal({
   onReviewPlan,
   onSelectPlanToView,
   onUpdateUsers,
+  onOpenSupabaseModal,
 }: AdminDashboardModalProps) {
   const [activeTab, setActiveTab] = useState<'review' | 'teachers' | 'stats' | 'settings'>('review');
   const [statusFilter, setStatusFilter] = useState<'all' | PlanStatus>('all');
@@ -253,8 +256,25 @@ export function AdminDashboardModal({
             </button>
           </div>
 
-          <div className="text-[11px] text-slate-500 dark:text-slate-400 hidden md:block">
-            អត្រាអនុម័ត៖ <strong className="text-emerald-600 dark:text-emerald-400">{stats.approvalRate}%</strong> ({stats.approved}/{stats.total})
+          <div className="flex items-center gap-3">
+            <div className="text-[11px] text-slate-500 dark:text-slate-400 hidden lg:block">
+              អត្រាអនុម័ត៖ <strong className="text-emerald-600 dark:text-emerald-400">{stats.approvalRate}%</strong> ({stats.approved}/{stats.total})
+            </div>
+
+            {onOpenSupabaseModal && (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  onOpenSupabaseModal();
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition shadow-2xs cursor-pointer"
+                title="បើកផ្ទាំងភ្ជាប់ Supabase & Vercel"
+              >
+                <Database className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Supabase Cloud</span>
+              </button>
+            )}
           </div>
         </div>
 

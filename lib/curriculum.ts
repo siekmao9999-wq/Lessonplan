@@ -218,10 +218,33 @@ export interface CurriculumLesson {
 
 import { ALL_CURRICULUM_LESSONS } from './curriculum-lessons';
 import { SECONDARY_CURRICULUM_LESSONS } from './curriculum-secondary';
+import { PRIMARY_CURRICULUM_LESSONS } from './curriculum-primary';
+import { LOWER_SEC_CURRICULUM_LESSONS } from './curriculum-lower-sec';
+import { UPPER_SEC_CURRICULUM_LESSONS } from './curriculum-upper-sec';
 
-export const OFFICIAL_CURRICULUM_LESSONS: Record<string, CurriculumLesson[]> = {
-  ...ALL_CURRICULUM_LESSONS,
-  ...SECONDARY_CURRICULUM_LESSONS,
+function mergeCurriculumDatasets(
+  ...sources: Record<string, CurriculumLesson[]>[]
+): Record<string, CurriculumLesson[]> {
+  const result: Record<string, CurriculumLesson[]> = {};
+  for (const source of sources) {
+    for (const [key, lessons] of Object.entries(source)) {
+      if (!result[key]) {
+        result[key] = [...lessons];
+      } else {
+        const existingTitles = new Set(result[key].map((l) => l.lessonTitle.trim().toLowerCase()));
+        for (const les of lessons) {
+          if (!existingTitles.has(les.lessonTitle.trim().toLowerCase())) {
+            result[key].push(les);
+            existingTitles.add(les.lessonTitle.trim().toLowerCase());
+          }
+        }
+      }
+    }
+  }
+  return result;
+}
+
+const BASE_MANUAL_LESSONS: Record<string, CurriculumLesson[]> = {
   // =================== រូបវិទ្យា (PHYSICS) ===================
   'ថ្នាក់ទី១០_រូបវិទ្យា': [
     {
@@ -867,6 +890,15 @@ export const OFFICIAL_CURRICULUM_LESSONS: Record<string, CurriculumLesson[]> = {
     },
   ],
 };
+
+export const OFFICIAL_CURRICULUM_LESSONS: Record<string, CurriculumLesson[]> = mergeCurriculumDatasets(
+  PRIMARY_CURRICULUM_LESSONS,
+  LOWER_SEC_CURRICULUM_LESSONS,
+  UPPER_SEC_CURRICULUM_LESSONS,
+  ALL_CURRICULUM_LESSONS,
+  SECONDARY_CURRICULUM_LESSONS,
+  BASE_MANUAL_LESSONS
+);
 
 // Helper function to find lessons for any grade and subject combination
 export function getLessonsForGradeAndSubject(grade: string, subject: string): CurriculumLesson[] {

@@ -792,15 +792,22 @@ ${
                   📖 ជ្រើសរើសមេរៀនផ្លូវការ (Curriculum Lesson)
                 </label>
                 <select
+                  aria-label="ជ្រើសរើសមេរៀនតាមកម្មវិធីសិក្សាជាតិ"
                   value={selectedLessonId}
                   onChange={(e) => handleLessonChange(e.target.value)}
                   className="w-full bg-white dark:bg-slate-900 border border-indigo-300 dark:border-indigo-700 text-slate-800 dark:text-slate-200 rounded-lg p-2 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none font-semibold text-indigo-950 dark:text-indigo-200 truncate"
                 >
                   <option value="">-- រើសមេរៀនតាមកម្មវិធីសិក្សាជាតិ ({availableLessons.length} មេរៀន) --</option>
-                  {availableLessons.map((les) => (
-                    <option key={les.id} value={les.id}>
-                      {les.chapter} ➔ {les.lessonTitle}
-                    </option>
+                  {Array.from(new Set(availableLessons.map((l) => l.chapter))).map((ch) => (
+                    <optgroup key={ch} label={ch}>
+                      {availableLessons
+                        .filter((l) => l.chapter === ch)
+                        .map((les) => (
+                          <option key={les.id} value={les.id}>
+                            {les.lessonTitle} ({les.subTopic.slice(0, 45)}...)
+                          </option>
+                        ))}
+                    </optgroup>
                   ))}
                   <option value="custom">✍️ បញ្ចូលជំពូក & មេរៀនដោយខ្លួនឯង...</option>
                 </select>

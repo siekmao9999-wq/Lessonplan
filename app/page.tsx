@@ -39,6 +39,8 @@ import { PresetModal } from '@/components/PresetModal';
 import { PrintPdfModal } from '@/components/PrintPdfModal';
 import { UserRoleSwitcherModal } from '@/components/UserRoleSwitcherModal';
 import { AdminDashboardModal } from '@/components/AdminDashboardModal';
+import { SupabaseConnectModal } from '@/components/SupabaseConnectModal';
+import { isSupabaseConnected } from '@/src/supabase/client';
 import { SKUN_NGS_PHYSICS_PRESET, COMPREHENSIVE_PRESETS } from '@/lib/presets';
 import { LessonPlanData, TeacherInfo, LessonGeneralInfo } from '@/types/lesson-plan';
 import { UserProfile, ManagedLessonPlanRecord, PlanStatus } from '@/types/auth';
@@ -120,6 +122,7 @@ export default function HomePage() {
   const [managedPlans, setManagedPlans] = useState<ManagedLessonPlanRecord[]>(() => getAllManagedPlans());
   const [showRoleSwitcherModal, setShowRoleSwitcherModal] = useState<boolean>(false);
   const [showAdminDashboardModal, setShowAdminDashboardModal] = useState<boolean>(false);
+  const [showSupabaseModal, setShowSupabaseModal] = useState<boolean>(false);
 
   // Current Lesson Plan Review Record
   const currentPlanRecord = useMemo(() => {
@@ -332,6 +335,8 @@ export default function HomePage() {
         onOpenRoleSwitcher={() => setShowRoleSwitcherModal(true)}
         onOpenAdminDashboard={() => setShowAdminDashboardModal(true)}
         onSubmitPlanForReview={handleSubmitPlanForReview}
+        onOpenSupabaseModal={() => setShowSupabaseModal(true)}
+        isSupabaseConnected={isSupabaseConnected()}
       />
 
       {/* Toast Notification */}
@@ -850,6 +855,19 @@ export default function HomePage() {
           showToast('info', `បានបើកកិច្ចតែងការ៖ ${viewPlan.generalInfo.lessonTitle}`);
         }}
         onUpdateUsers={handleUpdateUsers}
+        onOpenSupabaseModal={() => setShowSupabaseModal(true)}
+      />
+
+      {/* Supabase Connection & Vercel Modal */}
+      <SupabaseConnectModal
+        isOpen={showSupabaseModal}
+        onClose={() => setShowSupabaseModal(false)}
+        currentPlan={plan}
+        currentUser={currentUser}
+        onSyncPlansToLocal={(syncedPlans) => {
+          setManagedPlans(syncedPlans);
+          showToast('success', `🎉 បាន Sync កិច្ចតែងការសរុប ${syncedPlans.length} ពី Supabase ជោគជ័យ!`);
+        }}
       />
     </div>
   );
